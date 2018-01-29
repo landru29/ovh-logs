@@ -10,7 +10,7 @@ import com.loopj.android.http.AsyncHttpClient;
 
 public class Stream {
 
-    public static String domain = "https://gra2.logs.ovh.com/api";
+    public static String domain = "gra2.logs.ovh.com";
     public static String scheme = "https";
     public static String path = "api";
     public static String token = "";

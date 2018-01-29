@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 xmlns:tools="http://schemas.android.com/tools"
 android:layout_width="match_parent"
 android:layout_height="match_parent"
@@ -13,4 +13,4 @@ tools:context="fr.noopy.ovh_logs.MainActivity">
     tools:context=".MainActivity"
     tools:ignore="MergeRootFrame"
     />
-</android.support.design.widget.CoordinatorLayout>
+</LinearLayout>
