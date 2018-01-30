@@ -10,30 +10,49 @@
     app:cardCornerRadius="2dp"
     app:cardElevation="2dp">
 
-    <!-- Les CardView possèdent des attributs supplémentaires dont
-         - cardBackgroundColor
-         - cardElevation pour l'élévation (donc aussi l'ombre)
-         - cardCornerRadius pour arrondir les angles
-     -->
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Les CardView agissent comme des FrameLayout,
-         pour avoir une organisation verticale nous devons
-         donc rajouter un LinearLayout -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/timestamp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif"
+                android:paddingLeft="5dp"
+                android:textColor="#333"
+                android:textSize="12sp"
+                tools:text="2018/01/21 10:30:22" />
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif"
+                android:paddingLeft="5dp"
+                android:textColor="#333"
+                android:textSize="12sp"
+                tools:text="title" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="20dp"
-            tools:text="Paris"
             android:fontFamily="sans-serif"
+            android:padding="5dp"
             android:textColor="#333"
-            android:textSize="18sp" />
+            android:textSize="14sp"
+            tools:text="Message" />
     </LinearLayout>
 
 </android.support.v7.widget.CardView>

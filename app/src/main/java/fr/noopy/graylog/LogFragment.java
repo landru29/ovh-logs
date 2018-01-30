@@ -1,5 +1,6 @@
 package fr.noopy.graylog;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -40,6 +41,8 @@ public class LogFragment extends Fragment {
     private String streamId;
     private RecyclerView recyclerView;
     private List<Message> messages = new ArrayList<Message>();
+    private EditText filter;
+    private Button launchFilter;
 
 
 
@@ -53,8 +56,18 @@ public class LogFragment extends Fragment {
         Bundle bundle = this.getArguments();
         readDataFromBundle(bundle);
 
+        filter = rootView.findViewById(R.id.filter);
+        launchFilter = rootView.findViewById(R.id.launchFilter);
+
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(currentContext));
+
+        launchFilter.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                readLogs();
+            }
+        });
 
         readLogs();
 
@@ -76,15 +89,21 @@ public class LogFragment extends Fragment {
 
     }
 
+    private String getFilter() {
+        return filter.getText().toString();
+    }
+
     private void readLogs () {
         if (streamId == null) {
             return;
         }
+        launchFilter.setEnabled(false);
+        messages.clear();
         AsyncHttpClient client = Stream.client();
         RequestParams request = new RequestParams();
         request.put("fields", "title,msg,timestamp");
         request.put("filter", "streams:" + streamId);
-        request.put("query", "*");
+        request.put("query", getFilter());
         request.put("limit", 150);
         request.put("seconds", 300);
         request.put("sort", "timestamp:desc");
@@ -109,17 +128,19 @@ public class LogFragment extends Fragment {
 
                 }
                 recyclerView.setAdapter(new LogAdapter(messages));
-                Log.i("graylog",  "" + messages.size());
+                launchFilter.setEnabled(true);
             }
 
             @Override
             public void onFailure(int statusCode, Header[] headers, String resp, Throwable e) {
                 Log.i("graylog", "failure: " + resp);
+                launchFilter.setEnabled(true);
             }
 
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject resp) {
                 Log.i("graylog", "failure: " + resp.toString());
+                launchFilter.setEnabled(true);
             }
 
             @Override

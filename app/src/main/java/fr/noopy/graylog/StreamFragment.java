@@ -109,10 +109,15 @@ public class StreamFragment extends Fragment {
             }
         });
 
+        if (readTokens()) {
+            listStreams();
+        }
+
     }
 
-    private void readTokens() {
+    private Boolean readTokens() {
         Stream.token = tokenEdit.getText().toString();
+        return Stream.token.length()>0;
     }
 
     private void listStreams() {
