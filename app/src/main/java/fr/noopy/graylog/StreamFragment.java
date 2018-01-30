@@ -1,7 +1,9 @@
-package fr.noopy.ovh_logs;
+package fr.noopy.graylog;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.SharedPreferences;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -31,13 +33,14 @@ import cz.msebera.android.httpclient.Header;
  * Created by cmeichel on 29/01/18.
  */
 
-public class LogFragment extends Fragment {
+public class StreamFragment extends Fragment {
 
     private Context currentContext;
     private SharedPreferences settings;
     private EditText tokenEdit;
     private Spinner spinner;
     private Button scanButton;
+    private Button selectStreams;
     private View rootView;
     private List<StreamDescriptor> streams = new ArrayList<StreamDescriptor>();
     private StreamDescriptor currentStream;
@@ -49,7 +52,7 @@ public class LogFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        rootView = inflater.inflate(R.layout.log_fragment, container, false);
+        rootView = inflater.inflate(R.layout.stream_fragment, container, false);
 
         currentContext = rootView.getContext();
 
@@ -61,6 +64,7 @@ public class LogFragment extends Fragment {
         super.onResume();
 
         scanButton = rootView.findViewById(R.id.scanStreams);
+        selectStreams = rootView.findViewById(R.id.selectStreams);
         tokenEdit = ((Activity) currentContext).findViewById(R.id.readToken);
         spinner = ((Activity) currentContext).findViewById(R.id.stream);
 
@@ -72,9 +76,25 @@ public class LogFragment extends Fragment {
                 editor.commit();
                 readTokens();
                 listStreams();
-                //readLogs();
             }
         });
+
+        selectStreams.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Bundle args = new Bundle();
+                args.putString("token", tokenEdit.getText().toString());
+                args.putString("stream", currentStream.id);
+                LogFragment fragment = new LogFragment();
+                fragment.setArguments(args);
+                FragmentManager fragmentManager = getActivity().getFragmentManager();
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                fragmentTransaction.replace(R.id.main_container, fragment);
+                fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.commit();
+            }
+        });
+
 
         settings = currentContext.getSharedPreferences(PREFS_NAME, 0);
 
@@ -87,8 +107,6 @@ public class LogFragment extends Fragment {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 currentStream = streams.get(position);
-                Log.i("Select stream", currentStream.title);
-                readLogs();
             }
 
             @Override
@@ -146,56 +164,5 @@ public class LogFragment extends Fragment {
         });
     }
 
-    private void readLogs () {
-        if (currentStream == null) {
-            return;
-        }
-        AsyncHttpClient client = Stream.client();
-        RequestParams request = new RequestParams();
-        request.put("fields", "title,msg,timestamp");
-        request.put("filter", "streams:" + currentStream.id);
-        request.put("query", "*");
-        request.put("limit", 150);
-        request.put("seconds", 300);
-        request.put("sort", "timestamp:desc");
-        Log.i("request", request.toString());
-        client.get(currentContext, Stream.relativeSearchUrl(), request, new JsonHttpResponseHandler() {
 
-            @Override
-            public void onStart() {
-                Log.i("graylog", "starting " + Stream.relativeSearchUrl());
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                List<Message> messages = new ArrayList<Message>();
-                try {
-                    JSONArray msgList = response.getJSONArray("messages");
-                    for (int i=0; i< msgList.length(); i++) {
-                        messages.add(new Message(msgList.getJSONObject(i)));
-                    }
-                } catch (JSONException e) {
-
-                } catch (ParseException e) {
-
-                }
-                Log.i("graylog",  "" + messages.size());
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String resp, Throwable e) {
-                Log.i("graylog", "failure: " + resp);
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject resp) {
-                Log.i("graylog", "failure: " + resp.toString());
-            }
-
-            @Override
-            public void onRetry(int retryNo) {
-                Log.i("graylog", "retry");
-            }
-        });
-    }
 }

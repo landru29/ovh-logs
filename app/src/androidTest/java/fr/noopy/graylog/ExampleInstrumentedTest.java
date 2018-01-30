@@ -1,4 +1,4 @@
-package fr.noopy.ovh_logs;
+package fr.noopy.graylog;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("fr.noopy.ovh_logs", appContext.getPackageName());
+        assertEquals("fr.noopy.graylog", appContext.getPackageName());
     }
 }

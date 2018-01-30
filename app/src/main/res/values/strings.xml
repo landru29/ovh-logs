@@ -2,5 +2,6 @@
     <string name="app_name">ovh-logs</string>
     <string name="log_read_token_label">Read Token</string>
     <string name="scan">Scan</string>
+    <string name="select">Select</string>
     <string name="log_stream_label">Stream</string>
 </resources>

@@ -1,4 +1,4 @@
-package fr.noopy.ovh_logs;
+package fr.noopy.graylog;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,7 +20,7 @@ public class Message {
         JSONObject msg = data.getJSONObject("message");
         id = msg.getString("_id");
         String dateStr = msg.getString("timestamp");
-        SimpleDateFormat formater=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); //2018-01-29T20:53:42.000Z
+        SimpleDateFormat formater=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"); //2018-01-29T20:53:42.000Z
         timestamp = formater.parse(dateStr);
     }
 }

@@ -1,4 +1,4 @@
-package fr.noopy.ovh_logs;
+package fr.noopy.graylog;
 
 import org.json.JSONException;
 import org.json.JSONObject;
