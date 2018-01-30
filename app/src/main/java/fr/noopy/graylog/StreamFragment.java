@@ -85,13 +85,7 @@ public class StreamFragment extends Fragment {
                 Bundle args = new Bundle();
                 args.putString("token", tokenEdit.getText().toString());
                 args.putString("stream", currentStream.id);
-                LogFragment fragment = new LogFragment();
-                fragment.setArguments(args);
-                FragmentManager fragmentManager = getActivity().getFragmentManager();
-                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-                fragmentTransaction.replace(R.id.main_container, fragment);
-                fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                ((MainActivity)getActivity()).gotoLogs(args);
             }
         });
 

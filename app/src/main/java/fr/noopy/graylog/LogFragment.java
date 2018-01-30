@@ -4,6 +4,8 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,6 +38,10 @@ public class LogFragment extends Fragment {
     private View rootView;
     private String token;
     private String streamId;
+    private RecyclerView recyclerView;
+    private List<Message> messages = new ArrayList<Message>();
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -44,14 +50,24 @@ public class LogFragment extends Fragment {
 
         currentContext = rootView.getContext();
 
-        readDataFromBundle(savedInstanceState);
+        Bundle bundle = this.getArguments();
+        readDataFromBundle(bundle);
+
+        recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(currentContext));
+
+        readLogs();
 
         return rootView;
     }
 
     public void readDataFromBundle(Bundle bundle) {
-        token = bundle.getString("token");
-        streamId = bundle.getString("stream");
+        if (bundle != null) {
+            token = bundle.getString("token");
+            streamId = bundle.getString("stream");
+        } else {
+            Log.i("Data", "No bundle");
+        }
     }
 
     @Override
@@ -82,7 +98,6 @@ public class LogFragment extends Fragment {
 
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                List<Message> messages = new ArrayList<Message>();
                 try {
                     JSONArray msgList = response.getJSONArray("messages");
                     for (int i=0; i< msgList.length(); i++) {
@@ -93,6 +108,7 @@ public class LogFragment extends Fragment {
                 } catch (ParseException e) {
 
                 }
+                recyclerView.setAdapter(new LogAdapter(messages));
                 Log.i("graylog",  "" + messages.size());
             }
 

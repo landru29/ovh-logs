@@ -1,5 +1,7 @@
 package fr.noopy.graylog;
 
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -18,11 +20,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        StreamFragment fragment = new StreamFragment();
-
-        getFragmentManager().beginTransaction()
-                .replace(R.id.main_container, fragment)
-                .commit();
+        gotoStream();
 
         drawerLayout = findViewById(R.id.drawer_layout);
 
@@ -41,7 +39,23 @@ public class MainActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
+    }
 
+    public void gotoStream () {
+        StreamFragment fragment = new StreamFragment();
+
+        getFragmentManager().beginTransaction()
+                .replace(R.id.main_container, fragment)
+                .commit();
+    }
+
+    public void gotoLogs (Bundle bundle) {
+        LogFragment fragment = new LogFragment();
+        fragment.setArguments(bundle);
+
+        getFragmentManager().beginTransaction()
+                .replace(R.id.main_container, fragment)
+                .commit();
     }
 
     @Override
