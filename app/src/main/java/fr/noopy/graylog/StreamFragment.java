@@ -25,6 +25,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.MalformedURLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,8 @@ import cz.msebera.android.httpclient.Header;
 public class StreamFragment extends Fragment {
 
     private Context currentContext;
-    private SharedPreferences settings;
+
+    private EditText urlEdit;
     private EditText tokenEdit;
     private Spinner spinner;
     private Button scanButton;
@@ -46,11 +48,7 @@ public class StreamFragment extends Fragment {
     private View rootView;
     private List<StreamDescriptor> streams = new ArrayList<StreamDescriptor>();
     private StreamDescriptor currentStream;
-    private String graylogUrl = "https://gra2.logs.ovh.com/api";
-
-    public static final String PREFS_NAME = "graylog";
-    public static final String PREFS_TOKEN = "token";
-    public static final String GRAYLOG_API_URL = "graylog_url";
+    private Connection currentConnection;
 
 
     @Override
@@ -60,7 +58,30 @@ public class StreamFragment extends Fragment {
 
         currentContext = rootView.getContext();
 
+        Bundle bundle = this.getArguments();
+        readDataFromBundle(bundle);
+
         return rootView;
+    }
+
+    private void readDataFromBundle(Bundle bundle) {
+        if (bundle != null) {
+            currentConnection = Connection.fromBundle(bundle);
+        } else {
+            Log.i("Data", "No bundle");
+        }
+
+        if (currentConnection == null) {
+            Log.i("Data", "No connection in the bundle");
+            currentConnection = new Connection();
+        }
+
+        if (tokenEdit != null) {
+            tokenEdit.setText(currentConnection.token);
+        }
+        if (urlEdit != null) {
+            urlEdit.setText(currentConnection.getUrl());
+        }
     }
 
     @Override
@@ -70,30 +91,34 @@ public class StreamFragment extends Fragment {
         scanButton = rootView.findViewById(R.id.scanStreams);
         selectStreams = rootView.findViewById(R.id.selectStreams);
         tokenEdit = ((Activity) currentContext).findViewById(R.id.readToken);
+        urlEdit = ((Activity) currentContext).findViewById(R.id.url);
         spinner = ((Activity) currentContext).findViewById(R.id.stream);
 
         scanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                SharedPreferences.Editor editor = settings.edit();
-                editor.putString(PREFS_TOKEN, ((EditText)((Activity) currentContext).findViewById(R.id.readToken)).getText().toString());
-                editor.commit();
-                readTokens();
-                listStreams();
+                try {
+                    currentConnection.setUrl(urlEdit.getText().toString());
+                    currentConnection.setToken(tokenEdit.getText().toString());
+                    currentConnection.saveAsPreference(((MainActivity)getActivity()).getSettings());
+                    listStreams();
+                } catch(MalformedURLException e) {
+                    Log.w("User Entry", e.toString());
+                }
+
             }
         });
 
         selectStreams.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Bundle args = new Bundle();
-                args.putString("token", tokenEdit.getText().toString());
+                currentConnection.saveAsPreference(((MainActivity)getActivity()).getSettings());
+                currentStream.saveAsPreference(((MainActivity)getActivity()).getSettings());
+                Bundle args = currentConnection.saveAsBundle();
                 args.putString("stream", currentStream.id);
                 ((MainActivity)getActivity()).gotoLogs(args);
             }
         });
-
-        readSettings();
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -107,39 +132,32 @@ public class StreamFragment extends Fragment {
             }
         });
 
-        if (readTokens()) {
-            listStreams();
+        if (currentConnection != null) {
+            tokenEdit.setText(currentConnection.token);
+            urlEdit.setText(currentConnection.getUrl());
+
+            if (currentConnection.isConsistent()) {
+                listStreams();
+            }
         }
 
-    }
 
-    private void readSettings() {
-        settings = currentContext.getSharedPreferences(PREFS_NAME, 0);
 
-        String token = settings.getString(PREFS_TOKEN, "");
-        if (token!= null) {
-            tokenEdit.setText(token);
-        }
-
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putString(GRAYLOG_API_URL, graylogUrl);
-        editor.commit();
-    }
-
-    private Boolean readTokens() {
-        Stream.token = tokenEdit.getText().toString();
-        return Stream.token.length()>0;
     }
 
     private void listStreams() {
+        if (this.currentConnection == null || !this.currentConnection.isConsistent()) {
+            Log.i("OMG", "Connection is unconsistent");
+            return;
+        }
         scanButton.setEnabled(false);
-        AsyncHttpClient client = Stream.client();
+        AsyncHttpClient client = currentConnection.client();
         streams.clear();
-        client.get(currentContext, Stream.streamsUrl(graylogUrl), new JsonHttpResponseHandler() {
+        client.get(currentContext, currentConnection.streamsUrl(), new JsonHttpResponseHandler() {
 
             @Override
             public void onStart() {
-                Log.i("graylog", "starting " + Stream.streamsUrl(graylogUrl));
+                Log.i("graylog", "starting " + currentConnection.streamsUrl());
             }
 
             @Override

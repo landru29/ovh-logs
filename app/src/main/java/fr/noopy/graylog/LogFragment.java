@@ -37,13 +37,12 @@ public class LogFragment extends Fragment {
 
     private Context currentContext;
     private View rootView;
-    private String token;
     private String streamId;
     private RecyclerView recyclerView;
     private List<Message> messages = new ArrayList<Message>();
     private EditText filter;
     private Button launchFilter;
-    private String graylogUrl = "https://gra2.logs.ovh.com/api";
+    private Connection currentConnection;
 
 
 
@@ -54,14 +53,16 @@ public class LogFragment extends Fragment {
 
         currentContext = rootView.getContext();
 
-        Bundle bundle = this.getArguments();
-        readDataFromBundle(bundle);
-
         filter = rootView.findViewById(R.id.filter);
         launchFilter = rootView.findViewById(R.id.launchFilter);
 
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(currentContext));
+        recyclerView.setAdapter(new LogAdapter(messages));
+
+
+        Bundle bundle = this.getArguments();
+        readDataFromBundle(bundle);
 
         launchFilter.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -77,11 +78,19 @@ public class LogFragment extends Fragment {
 
     public void readDataFromBundle(Bundle bundle) {
         if (bundle != null) {
-            token = bundle.getString("token");
-            streamId = bundle.getString("stream");
+            currentConnection = Connection.fromBundle(bundle);
+            streamId = bundle.getString("stream", "");
         } else {
             Log.i("Data", "No bundle");
         }
+
+        if (currentConnection == null) {
+            Log.i("Data", "No connection in the bundle");
+            currentConnection = new Connection();
+        }
+
+        Log.i("Stream", streamId);
+        Log.i("url", currentConnection.getUrl());
     }
 
     @Override
@@ -95,12 +104,17 @@ public class LogFragment extends Fragment {
     }
 
     private void readLogs () {
+        if (this.currentConnection == null || !this.currentConnection.isConsistent()) {
+            Log.i("OMG", "Connection is unconsistent");
+            return;
+        }
         if (streamId == null) {
+            Log.i("OMG", "CNo stream ID");
             return;
         }
         launchFilter.setEnabled(false);
         messages.clear();
-        AsyncHttpClient client = Stream.client();
+        AsyncHttpClient client = currentConnection.client();
         RequestParams request = new RequestParams();
         request.put("fields", "title,msg,timestamp");
         request.put("filter", "streams:" + streamId);
@@ -109,11 +123,11 @@ public class LogFragment extends Fragment {
         request.put("seconds", 300);
         request.put("sort", "timestamp:desc");
         Log.i("request", request.toString());
-        client.get(currentContext, Stream.relativeSearchUrl(graylogUrl), request, new JsonHttpResponseHandler() {
+        client.get(currentContext, currentConnection.relativeSearchUrl(), request, new JsonHttpResponseHandler() {
 
             @Override
             public void onStart() {
-                Log.i("graylog", "starting " + Stream.relativeSearchUrl(graylogUrl));
+                Log.i("graylog", "starting " + currentConnection.relativeSearchUrl());
             }
 
             @Override

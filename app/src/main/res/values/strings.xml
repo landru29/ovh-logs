@@ -6,4 +6,5 @@
     <string name="log_stream_label">Stream</string>
     <string name="filter">filter</string>
     <string name="home">Home</string>
+    <string name="graylog_url">URL graylog</string>
 </resources>

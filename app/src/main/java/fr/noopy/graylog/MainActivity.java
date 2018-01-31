@@ -1,7 +1,6 @@
 package fr.noopy.graylog;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -16,13 +15,19 @@ public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
+    private Connection currentConnexion;
+    private SharedPreferences settings;
+    private StreamDescriptor stream;
+
+    public static final String PREFS_NAME = "graylog";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        gotoStream();
+        settings =  this.getSharedPreferences(PREFS_NAME, 0);
 
         drawerLayout = findViewById(R.id.drawer_layout);
 
@@ -43,17 +48,38 @@ public class MainActivity extends AppCompatActivity {
 
         onMenuItemSelected();
 
+        currentConnexion = Connection.fromPreference(settings);
+        stream = StreamDescriptor.fromPreference(settings);
+        if (currentConnexion == null || !currentConnexion.isConsistent() || stream == null) {
+            gotoStream();
+        } else {
+            gotoLogs(new Bundle());
+        }
+
     }
 
     public void gotoStream () {
         StreamFragment fragment = new StreamFragment();
-
+        Bundle bundle = new Bundle();
+        if (currentConnexion != null) {
+            bundle.putString("connection", currentConnexion.toString());
+        }
+        fragment.setArguments(bundle);
         getFragmentManager().beginTransaction()
                 .replace(R.id.main_container, fragment)
                 .commit();
     }
 
     public void gotoLogs (Bundle bundle) {
+
+        if (bundle.getString("connection", "").isEmpty() && currentConnexion != null) {
+            bundle.putString("connection", currentConnexion.toString());
+        }
+
+        if (bundle.getString("stream", "").isEmpty() && stream != null) {
+            bundle.putString("stream", stream.stringify());
+        }
+
         LogFragment fragment = new LogFragment();
         fragment.setArguments(bundle);
 
@@ -99,5 +125,12 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
+    public SharedPreferences getSettings() {
+        return settings;
+    }
+
+    public void saveStream(String stream) {
+
+    }
 
 }
