@@ -4,31 +4,42 @@ import android.net.Uri;
 
 import com.loopj.android.http.AsyncHttpClient;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 /**
  * Created by cmeichel on 29/01/18.
  */
 
 public class Stream {
 
-    public static String domain = "gra2.logs.ovh.com";
-    public static String scheme = "https";
-    public static String path = "api";
     public static String token = "";
+    public static URL url;
 
     public static Uri.Builder builder() {
         Uri.Builder builder = new Uri.Builder();
-        return builder.scheme(scheme)
-                .authority(domain)
-                .appendPath(path);
+        return builder.scheme(url.getProtocol())
+                .authority(url.getHost())
+                .appendPath(url.getPath());
     }
 
-    public static String streamsUrl() {
-        return Stream.builder()
+    public static Uri.Builder builder(String urlStr) {
+        try {
+            url = new URL(urlStr);
+            return builder();
+
+        } catch (MalformedURLException e) {
+            return new Uri.Builder();
+        }
+    }
+
+    public static String streamsUrl(String urlStr) {
+        return Stream.builder(urlStr)
                 .appendPath("streams").toString();
     }
 
-    public static String relativeSearchUrl() {
-        return Stream.builder()
+    public static String relativeSearchUrl(String urlStr) {
+        return Stream.builder(urlStr)
                 .appendPath("search")
                 .appendPath("universal")
                 .appendPath("relative")

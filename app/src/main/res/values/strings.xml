@@ -5,4 +5,5 @@
     <string name="select">Select</string>
     <string name="log_stream_label">Stream</string>
     <string name="filter">filter</string>
+    <string name="home">Home</string>
 </resources>

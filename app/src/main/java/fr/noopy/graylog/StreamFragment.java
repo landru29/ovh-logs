@@ -5,6 +5,8 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.SharedPreferences;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,9 +46,11 @@ public class StreamFragment extends Fragment {
     private View rootView;
     private List<StreamDescriptor> streams = new ArrayList<StreamDescriptor>();
     private StreamDescriptor currentStream;
+    private String graylogUrl = "https://gra2.logs.ovh.com/api";
 
     public static final String PREFS_NAME = "graylog";
     public static final String PREFS_TOKEN = "token";
+    public static final String GRAYLOG_API_URL = "graylog_url";
 
 
     @Override
@@ -89,13 +93,7 @@ public class StreamFragment extends Fragment {
             }
         });
 
-
-        settings = currentContext.getSharedPreferences(PREFS_NAME, 0);
-
-        String token = settings.getString(PREFS_TOKEN, "");
-        if (token!= null) {
-            tokenEdit.setText(token);
-        }
+        readSettings();
 
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -115,6 +113,19 @@ public class StreamFragment extends Fragment {
 
     }
 
+    private void readSettings() {
+        settings = currentContext.getSharedPreferences(PREFS_NAME, 0);
+
+        String token = settings.getString(PREFS_TOKEN, "");
+        if (token!= null) {
+            tokenEdit.setText(token);
+        }
+
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString(GRAYLOG_API_URL, graylogUrl);
+        editor.commit();
+    }
+
     private Boolean readTokens() {
         Stream.token = tokenEdit.getText().toString();
         return Stream.token.length()>0;
@@ -124,11 +135,11 @@ public class StreamFragment extends Fragment {
         scanButton.setEnabled(false);
         AsyncHttpClient client = Stream.client();
         streams.clear();
-        client.get(currentContext, Stream.streamsUrl(), new JsonHttpResponseHandler() {
+        client.get(currentContext, Stream.streamsUrl(graylogUrl), new JsonHttpResponseHandler() {
 
             @Override
             public void onStart() {
-                Log.i("graylog", "starting " + Stream.streamsUrl());
+                Log.i("graylog", "starting " + Stream.streamsUrl(graylogUrl));
             }
 
             @Override

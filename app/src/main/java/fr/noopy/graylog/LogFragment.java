@@ -43,6 +43,7 @@ public class LogFragment extends Fragment {
     private List<Message> messages = new ArrayList<Message>();
     private EditText filter;
     private Button launchFilter;
+    private String graylogUrl = "https://gra2.logs.ovh.com/api";
 
 
 
@@ -108,11 +109,11 @@ public class LogFragment extends Fragment {
         request.put("seconds", 300);
         request.put("sort", "timestamp:desc");
         Log.i("request", request.toString());
-        client.get(currentContext, Stream.relativeSearchUrl(), request, new JsonHttpResponseHandler() {
+        client.get(currentContext, Stream.relativeSearchUrl(graylogUrl), request, new JsonHttpResponseHandler() {
 
             @Override
             public void onStart() {
-                Log.i("graylog", "starting " + Stream.relativeSearchUrl());
+                Log.i("graylog", "starting " + Stream.relativeSearchUrl(graylogUrl));
             }
 
             @Override
