@@ -140,4 +140,9 @@ public class Connection {
         }
         return "";
     }
+
+    // Get session ID
+    // curl 'https://gra2.logs.ovh.com/api/system/sessions' -H 'Content-Type: application/json' -H 'Accept: application/json'  --data-binary '{"username":"my_username","password":"my_password","host":url.getHost()}'
+    // Response
+    // {"valid_until":"2018-02-01T15:27:26.162+0000","session_id":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"}
 }
