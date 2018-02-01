@@ -1,9 +1,8 @@
 package fr.noopy.graylog;
 
-import android.app.Activity;
+
 import android.app.Fragment;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -13,21 +12,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
-
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import cz.msebera.android.httpclient.Header;
+import fr.noopy.graylog.api.Connection;
+import fr.noopy.graylog.log.LogAdapter;
+import fr.noopy.graylog.log.Message;
+import fr.noopy.graylog.task.TaskReport;
 
 /**
  * Created by cmeichel on 30/01/18.
@@ -37,7 +28,6 @@ public class LogFragment extends Fragment {
 
     private Context currentContext;
     private View rootView;
-    private String streamId;
     private RecyclerView recyclerView;
     private List<Message> messages = new ArrayList<Message>();
     private EditText filter;
@@ -79,7 +69,6 @@ public class LogFragment extends Fragment {
     public void readDataFromBundle(Bundle bundle) {
         if (bundle != null) {
             currentConnection = Connection.fromBundle(bundle);
-            streamId = bundle.getString("stream", "");
         } else {
             Log.i("Data", "No bundle");
         }
@@ -89,7 +78,6 @@ public class LogFragment extends Fragment {
             currentConnection = new Connection();
         }
 
-        Log.i("Stream", streamId);
         Log.i("url", currentConnection.getUrl());
     }
 
@@ -104,65 +92,27 @@ public class LogFragment extends Fragment {
     }
 
     private void readLogs () {
-        if (this.currentConnection == null || !this.currentConnection.isConsistent()) {
-            Log.i("OMG", "Connection is unconsistent");
-            return;
-        }
-        if (streamId == null) {
-            Log.i("OMG", "CNo stream ID");
-            return;
-        }
-        launchFilter.setEnabled(false);
-        messages.clear();
-        AsyncHttpClient client = currentConnection.client();
-        RequestParams request = new RequestParams();
-        request.put("fields", "title,msg,timestamp");
-        request.put("filter", "streams:" + streamId);
-        request.put("query", getFilter());
-        request.put("limit", 150);
-        request.put("seconds", 300);
-        request.put("sort", "timestamp:desc");
-        Log.i("request", request.toString());
-        client.get(currentContext, currentConnection.relativeSearchUrl(), request, new JsonHttpResponseHandler() {
-
-            @Override
-            public void onStart() {
-                Log.i("graylog", "starting " + currentConnection.relativeSearchUrl());
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                try {
-                    JSONArray msgList = response.getJSONArray("messages");
-                    for (int i=0; i< msgList.length(); i++) {
-                        messages.add(new Message(msgList.getJSONObject(i)));
-                    }
-                } catch (JSONException e) {
-
-                } catch (ParseException e) {
+        if (currentConnection!= null) {
+            launchFilter.setEnabled(false);
+            messages.clear();
+            currentConnection.readLogs(getFilter(), new TaskReport<List<Message>>() {
+                @Override
+                public void onFailure(String reason) {
 
                 }
-                recyclerView.setAdapter(new LogAdapter(messages));
-                launchFilter.setEnabled(true);
-            }
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String resp, Throwable e) {
-                Log.i("graylog", "failure: " + resp);
-                launchFilter.setEnabled(true);
-            }
+                @Override
+                public void onSuccess(List<Message> data) {
+                    messages = data;
+                    recyclerView.setAdapter(new LogAdapter(messages));
+                }
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject resp) {
-                Log.i("graylog", "failure: " + resp.toString());
-                launchFilter.setEnabled(true);
-            }
-
-            @Override
-            public void onRetry(int retryNo) {
-                Log.i("graylog", "retry");
-            }
-        });
+                @Override
+                public void onComplete() {
+                    launchFilter.setEnabled(true);
+                }
+            });
+        }
     }
 
 

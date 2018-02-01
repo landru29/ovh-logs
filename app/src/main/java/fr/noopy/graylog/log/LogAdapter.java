@@ -1,4 +1,4 @@
-package fr.noopy.graylog;
+package fr.noopy.graylog.log;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -6,6 +6,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.List;
+
+import fr.noopy.graylog.R;
 
 /**
  * Created by cyrille on 30/01/18.

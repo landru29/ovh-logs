@@ -1,4 +1,4 @@
-package fr.noopy.graylog;
+package fr.noopy.graylog.log;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
@@ -6,6 +6,8 @@ import android.widget.TextView;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+
+import fr.noopy.graylog.R;
 
 /**
  * Created by cyrille on 30/01/18.

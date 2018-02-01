@@ -11,6 +11,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 
+import fr.noopy.graylog.api.Connection;
+import fr.noopy.graylog.api.StreamDescriptor;
+
 public class MainActivity extends AppCompatActivity {
 
     private DrawerLayout drawerLayout;
@@ -49,8 +52,7 @@ public class MainActivity extends AppCompatActivity {
         onMenuItemSelected();
 
         currentConnexion = Connection.fromPreference(settings);
-        stream = StreamDescriptor.fromPreference(settings);
-        if (currentConnexion == null || !currentConnexion.isConsistent() || stream == null) {
+        if (currentConnexion == null || !currentConnexion.isConsistent() || currentConnexion.currentStream == null) {
             gotoStream();
         } else {
             gotoLogs(new Bundle());
@@ -74,10 +76,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (bundle.getString("connection", "").isEmpty() && currentConnexion != null) {
             bundle.putString("connection", currentConnexion.toString());
-        }
-
-        if (bundle.getString("stream", "").isEmpty() && stream != null) {
-            bundle.putString("stream", stream.stringify());
         }
 
         LogFragment fragment = new LogFragment();

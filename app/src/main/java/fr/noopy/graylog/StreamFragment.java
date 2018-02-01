@@ -2,11 +2,6 @@ package fr.noopy.graylog;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
-import android.content.SharedPreferences;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,19 +13,13 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-
-import com.loopj.android.http.*;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.net.MalformedURLException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
-import cz.msebera.android.httpclient.Header;
+import fr.noopy.graylog.api.Connection;
+import fr.noopy.graylog.api.StreamDescriptor;
+import fr.noopy.graylog.task.TaskReport;
 
 /**
  * Created by cmeichel on 29/01/18.
@@ -47,7 +36,6 @@ public class StreamFragment extends Fragment {
     private Button selectStreams;
     private View rootView;
     private List<StreamDescriptor> streams = new ArrayList<StreamDescriptor>();
-    private StreamDescriptor currentStream;
     private Connection currentConnection;
 
 
@@ -113,9 +101,7 @@ public class StreamFragment extends Fragment {
             @Override
             public void onClick(View view) {
                 currentConnection.saveAsPreference(((MainActivity)getActivity()).getSettings());
-                currentStream.saveAsPreference(((MainActivity)getActivity()).getSettings());
                 Bundle args = currentConnection.saveAsBundle();
-                args.putString("stream", currentStream.id);
                 ((MainActivity)getActivity()).gotoLogs(args);
             }
         });
@@ -123,7 +109,7 @@ public class StreamFragment extends Fragment {
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                currentStream = streams.get(position);
+                currentConnection.currentStream = streams.get(position);
             }
 
             @Override
@@ -146,50 +132,30 @@ public class StreamFragment extends Fragment {
     }
 
     private void listStreams() {
-        if (this.currentConnection == null || !this.currentConnection.isConsistent()) {
-            Log.i("OMG", "Connection is unconsistent");
-            return;
-        }
-        scanButton.setEnabled(false);
-        AsyncHttpClient client = currentConnection.client();
-        streams.clear();
-        client.get(currentContext, currentConnection.streamsUrl(), new JsonHttpResponseHandler() {
+        if (this.currentConnection != null) {
+            scanButton.setEnabled(false);
+            streams.clear();
+            this.currentConnection.listStreams(new TaskReport<List<StreamDescriptor>>() {
+                @Override
+                public void onFailure(String reason) {
 
-            @Override
-            public void onStart() {
-                Log.i("graylog", "starting " + currentConnection.streamsUrl());
-            }
+                }
 
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                try {
-                    JSONArray streamsJson = response.getJSONArray("streams");
-                    for (int i=0; i<streamsJson.length(); i++) {
-                        streams.add(new StreamDescriptor(streamsJson.getJSONObject(i)));
+                @Override
+                public void onSuccess(List<StreamDescriptor> data) {
+                    streams = data;
+                    if (streams.size()>0) {
+                        ArrayAdapter sailAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
+                        spinner.setAdapter(sailAdapter);
                     }
-                } catch (JSONException e) {
-
                 }
 
-                if (streams.size()>0) {
-                    ArrayAdapter sailAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
-                    spinner.setAdapter(sailAdapter);
+                @Override
+                public void onComplete() {
+                    scanButton.setEnabled(true);
                 }
-
-                scanButton.setEnabled(true);
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String resp, Throwable e) {
-                Log.i("graylog", "failure");
-                scanButton.setEnabled(true);
-            }
-
-            @Override
-            public void onRetry(int retryNo) {
-                Log.i("graylog", "retry");
-            }
-        });
+            });
+        }
     }
 
 

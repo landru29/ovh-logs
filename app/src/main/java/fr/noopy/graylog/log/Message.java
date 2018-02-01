@@ -1,4 +1,4 @@
-package fr.noopy.graylog;
+package fr.noopy.graylog.log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,7 +22,7 @@ public class Message {
     public Date timestamp;
     public Map<String, String> map = new HashMap<String, String>();
 
-    Message(JSONObject data) throws JSONException, ParseException {
+    public Message(JSONObject data) throws JSONException, ParseException {
         JSONObject msg = data.getJSONObject("message");
         id = msg.getString("_id");
         String dateStr = msg.getString("timestamp");
