@@ -14,13 +14,16 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.entity.StringEntity;
 import fr.noopy.graylog.log.Message;
 import fr.noopy.graylog.task.TaskReport;
 
@@ -32,6 +35,7 @@ public class Connection {
     public String name;
     public String token;
     public URL url;
+    public String tokenType;
     public StreamDescriptor currentStream;
 
     public static final String PREFS_CONNECTION = "connection";
@@ -39,6 +43,7 @@ public class Connection {
     public Connection() {
         this.name = "default";
         this.token = "";
+        this.tokenType = "";
         try {
             this.url = new URL("");
         } catch (MalformedURLException e) {
@@ -53,7 +58,15 @@ public class Connection {
     }
 
     public Connection(JSONObject data) throws MalformedURLException, JSONException {
-        this(data.getString("name"), data.getString("token"), data.getString("url"));
+        this(data.getString("name"), data.has("token") ? data.getString("token") : "", data.getString("url"));
+        if (data.has("tokenType")) {
+            tokenType = data.getString("tokenType");
+        } else if (!token.isEmpty() ) {
+            tokenType = "token";
+        }
+        if (data.has("stream")) {
+            currentStream = new StreamDescriptor(data.getString("stream"));
+        }
     }
 
     public Connection(String data) throws MalformedURLException, JSONException {
@@ -61,21 +74,34 @@ public class Connection {
     }
 
 
-    public String toString() {
+    public String toString(boolean all) {
         JSONObject result = new JSONObject();
         try {
             result.put("name", name);
-            result.put("token", token);
+            if (tokenType == "token" || all) {
+                result.put("token", token);
+            }
+            if (all) {
+                result.put("tokenType", tokenType);
+            }
             result.put("url", url.toString());
+            if (currentStream != null) {
+                result.put("stream", currentStream.stringify());
+            }
             return result.toString();
         } catch (JSONException e) {
             return "";
         }
     }
 
+    public String toString() {
+        return toString(false);
+    }
+
     public void saveAsPreference(SharedPreferences settings) {
         SharedPreferences.Editor editor = settings.edit();
-        editor.putString(PREFS_CONNECTION, this.toString());
+        String dataStr = toString(false);
+        editor.putString(PREFS_CONNECTION, dataStr);
         editor.commit();
         Log.i("Preferences", "saving connection " + getUrl());
     }
@@ -84,15 +110,17 @@ public class Connection {
         try {
             return new Connection(settings.getString(PREFS_CONNECTION, ""));
         } catch (JSONException e) {
+            Log.i("JSONException", e.toString());
             return null;
         } catch (MalformedURLException e) {
+            Log.i("MalformedURLException", e.toString());
             return null;
         }
     }
 
     public Bundle saveAsBundle() {
         Bundle bundle = new Bundle();
-        bundle.putString("connection", toString());
+        bundle.putString("connection", toString(true));
         return bundle;
     }
 
@@ -107,15 +135,27 @@ public class Connection {
     }
 
     private Uri.Builder builder() {
+        List<String> pathElements = Arrays.asList(url.getPath().replaceAll("^/+", "").split("/"));
         Uri.Builder builder = new Uri.Builder();
-        return builder.scheme(url.getProtocol())
-                .authority(url.getHost())
-                .appendPath(url.getPath());
+        Uri.Builder builderResult =  builder.scheme(url.getProtocol())
+                .authority(url.getHost());
+        for (int i=0; i< pathElements.size(); i++) {
+            builderResult = builderResult.appendPath(pathElements.get(i));
+        }
+        return builderResult;
     }
 
     public String streamsUrl() {
         return builder()
-                .appendPath("streams").toString();
+                .appendPath("streams")
+                .toString();
+    }
+
+    public String loginUrl() {
+        return builder()
+                .appendPath("system")
+                .appendPath("sessions")
+                .toString();
     }
 
     public String relativeSearchUrl() {
@@ -126,18 +166,26 @@ public class Connection {
                 .toString();
     }
 
-    public AsyncHttpClient client() {
-        AsyncHttpClient client = new AsyncHttpClient();
-        client.setBasicAuth(token, "token");
+    public AsyncHttpClient client(boolean withAuth) {
+        AsyncHttpClient client = new AsyncHttpClient(true,80,443);
+        if (withAuth) {
+            client.setBasicAuth(token, tokenType);
+            Log.i("basic", token + ":" + tokenType);
+        }
         return client;
+    }
+
+    public AsyncHttpClient client() {
+        return client(true);
     }
 
     public boolean isConsistent() {
         return (url != null) && !token.isEmpty();
     }
 
-    public void setToken(String data) {
+    public void setToken(String data, String dataType) {
         token = data;
+        tokenType = dataType;
     }
 
     public void setUrl(String data) throws MalformedURLException {
@@ -154,6 +202,8 @@ public class Connection {
     public void listStreams(final TaskReport<List<StreamDescriptor>> task) {
         if (!this.isConsistent()) {
             Log.i("OMG", "Connection is unconsistent");
+            task.onFailure("Connection is unconsistent");
+            task.onComplete();
             return;
         }
         final String urlStr = this.streamsUrl();
@@ -182,8 +232,15 @@ public class Connection {
 
             @Override
             public void onFailure(int statusCode, Header[] headers, String resp, Throwable e) {
-                Log.i("graylog", "failure");
+                Log.i("graylog", "failure: " + resp);
                 task.onFailure(resp);
+                task.onComplete();
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject resp) {
+                Log.i("graylog", "failure: " + resp);
+                task.onFailure(resp != null ? resp.toString() : "unknown");
                 task.onComplete();
             }
 
@@ -197,10 +254,14 @@ public class Connection {
     public void readLogs (String filter, final TaskReport<List<Message>> task) {
         if ( !this.isConsistent()) {
             Log.i("OMG", "Connection is unconsistent");
+            task.onFailure("Connection is unconsistent");
+            task.onComplete();
             return;
         }
         if (this.currentStream == null) {
             Log.i("OMG", "No stream ID");
+            task.onFailure("No stream ID");
+            task.onComplete();
             return;
         }
         RequestParams request = new RequestParams();
@@ -247,7 +308,7 @@ public class Connection {
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject resp) {
                 Log.i("graylog", "failure: " + resp.toString());
-                task.onFailure(resp.toString());
+                task.onFailure(resp != null ? resp.toString() : "unknown");
                 task.onComplete();
             }
 
@@ -256,6 +317,72 @@ public class Connection {
                 Log.i("graylog", "retry");
             }
         });
+    }
+
+    public void login(String username, String password, final TaskReport<String> task) {
+        if (url == null) {
+            Log.i("OMG", "Connection is unconsistent");
+            task.onFailure("Connection is unconsistent");
+            task.onComplete();
+            return;
+        }
+        final String urlStr = this.loginUrl();
+        try {
+            JSONObject jsonParams = new JSONObject();
+            jsonParams.put("username", username);
+            jsonParams.put("password", password);
+            jsonParams.put("host", url.getHost());
+            AsyncHttpClient client = this.client(false);
+            //client.addHeader("Host", url.getHost());
+            client.addHeader("Accept", "application/json");
+            client.post(null, urlStr, new StringEntity(jsonParams.toString()), "application/json", new JsonHttpResponseHandler() {
+
+                @Override
+                public void onStart() {
+                    Log.i("graylog", "starting " + urlStr);
+                }
+
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    if (response.has("session_id")) {
+                        try {
+                            task.onSuccess(response.getString("session_id"));
+                        } catch (JSONException e) {
+                            task.onFailure(e.toString());
+                        }
+                    } else {
+                        task.onFailure("No session id");
+                    }
+
+                    task.onComplete();
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, String resp, Throwable e) {
+                    Log.i("graylog", "failure: " + resp);
+                    task.onFailure(resp);
+                    task.onComplete();
+                }
+
+                @Override
+                public void onFailure(int statusCode, Header[] headers, Throwable e, JSONObject resp) {
+                    Log.i("graylog", "failure: " + resp);
+                    task.onFailure(resp != null ? resp.toString() : "unknown");
+                    task.onComplete();
+                }
+
+                @Override
+                public void onRetry(int retryNo) {
+                    Log.i("graylog", "retry");
+                }
+            });
+        } catch (JSONException e) {
+            task.onFailure(e.toString());
+            task.onComplete();
+        } catch (UnsupportedEncodingException e) {
+            task.onFailure(e.toString());
+            task.onComplete();
+        }
     }
 
     // Get session ID

@@ -61,8 +61,6 @@ public class LogFragment extends Fragment {
             }
         });
 
-        readLogs();
-
         return rootView;
     }
 
@@ -84,6 +82,7 @@ public class LogFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        readLogs();
 
     }
 

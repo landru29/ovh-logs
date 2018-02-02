@@ -12,7 +12,12 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
+import android.widget.Toast;
+
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +25,9 @@ import java.util.List;
 import fr.noopy.graylog.api.Connection;
 import fr.noopy.graylog.api.StreamDescriptor;
 import fr.noopy.graylog.task.TaskReport;
+
+import static fr.noopy.graylog.StreamFragment.AccessMethod.LOGIN;
+import static fr.noopy.graylog.StreamFragment.AccessMethod.TOKEN;
 
 /**
  * Created by cmeichel on 29/01/18.
@@ -31,12 +39,17 @@ public class StreamFragment extends Fragment {
 
     private EditText urlEdit;
     private EditText tokenEdit;
+    private EditText usernameEdit;
+    private EditText passwordEdit;
     private Spinner spinner;
-    private Button scanButton;
+    private Button usernameLogin;
+    private Button tokenLogin;
     private Button selectStreams;
+    private RadioGroup radioMethodGroup;
     private View rootView;
     private List<StreamDescriptor> streams = new ArrayList<StreamDescriptor>();
     private Connection currentConnection;
+    public enum AccessMethod { LOGIN, TOKEN}
 
 
     @Override
@@ -72,34 +85,89 @@ public class StreamFragment extends Fragment {
         }
     }
 
+    private void setFeaturesEnabled(boolean state) {
+        selectStreams.setEnabled(state);
+        tokenEdit.setEnabled(state);
+        urlEdit.setEnabled(state);
+        spinner.setEnabled(state);
+        radioMethodGroup.setEnabled(state);
+        usernameLogin.setEnabled(state);
+        tokenLogin.setEnabled(state);
+        usernameEdit.setEnabled(state);
+        passwordEdit.setEnabled(state);
+    }
+
+    private void setMethod(AccessMethod method) {
+        LinearLayout loginMethod = ((Activity) currentContext).findViewById(R.id.loginMethod);
+        LinearLayout tokenMethod = ((Activity) currentContext).findViewById(R.id.tokenMethod);
+        switch (method) {
+            case LOGIN:
+                tokenMethod.setVisibility(View.GONE);
+                loginMethod.setVisibility(View.VISIBLE);
+                break;
+            case TOKEN:
+                tokenMethod.setVisibility(View.VISIBLE);
+                loginMethod.setVisibility(View.GONE);
+                break;
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
 
-        scanButton = rootView.findViewById(R.id.scanStreams);
         selectStreams = rootView.findViewById(R.id.selectStreams);
         tokenEdit = ((Activity) currentContext).findViewById(R.id.readToken);
         urlEdit = ((Activity) currentContext).findViewById(R.id.url);
         spinner = ((Activity) currentContext).findViewById(R.id.stream);
+        radioMethodGroup = ((Activity) currentContext).findViewById(R.id.method);
+        usernameLogin = ((Activity) currentContext).findViewById(R.id.loginUserPassword);
+        tokenLogin = ((Activity) currentContext).findViewById(R.id.loginReadToken);
 
-        scanButton.setOnClickListener(new View.OnClickListener() {
+        usernameEdit = ((Activity) currentContext).findViewById(R.id.username);
+        passwordEdit = ((Activity) currentContext).findViewById(R.id.password);
+
+
+        RadioButton byLogin = ((Activity) currentContext).findViewById(R.id.radioButtonLogin);
+        RadioButton byToken = ((Activity) currentContext).findViewById(R.id.radioButtonToken);
+
+
+        radioMethodGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup radioGroup, int i) {
+                switch (i) {
+                    case R.id.radioButtonLogin:
+                        setMethod(LOGIN);
+                        break;
+                    case R.id.radioButtonToken:
+                        setMethod(TOKEN);
+                        break;
+                }
+            }
+        });
+
+        usernameLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                try {
-                    currentConnection.setUrl(urlEdit.getText().toString());
-                    currentConnection.setToken(tokenEdit.getText().toString());
-                    currentConnection.saveAsPreference(((MainActivity)getActivity()).getSettings());
-                    listStreams();
-                } catch(MalformedURLException e) {
-                    Log.w("User Entry", e.toString());
-                }
+                String username = usernameEdit.getText().toString();
+                String password = passwordEdit.getText().toString();
+                postLogin(username, password);
 
+            }
+        });
+
+        tokenLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                currentConnection.setToken(tokenEdit.getText().toString(), "token");
+                listStreams();
             }
         });
 
         selectStreams.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.i("STREAM", currentConnection.currentStream.toString());
                 currentConnection.saveAsPreference(((MainActivity)getActivity()).getSettings());
                 Bundle args = currentConnection.saveAsBundle();
                 ((MainActivity)getActivity()).gotoLogs(args);
@@ -127,34 +195,86 @@ public class StreamFragment extends Fragment {
             }
         }
 
-
+        if (currentConnection.tokenType == "token") {
+            byToken.toggle();
+        } else {
+            byLogin.toggle();
+        }
 
     }
 
     private void listStreams() {
-        if (this.currentConnection != null) {
-            scanButton.setEnabled(false);
-            streams.clear();
-            this.currentConnection.listStreams(new TaskReport<List<StreamDescriptor>>() {
-                @Override
-                public void onFailure(String reason) {
+        if (currentConnection != null) {
+            try {
+                setFeaturesEnabled(false);
+                currentConnection.setUrl(urlEdit.getText().toString());
+                currentConnection.saveAsPreference(((MainActivity) getActivity()).getSettings());
+                streams.clear();
+                this.currentConnection.listStreams(new TaskReport<List<StreamDescriptor>>() {
+                    @Override
+                    public void onFailure(String reason) {
+                        Toast.makeText(getActivity(), "OMG! something's got wront with graylog server",
+                                Toast.LENGTH_LONG).show();
+                    }
 
-                }
+                    @Override
+                    public void onSuccess(List<StreamDescriptor> data) {
+                        streams = data;
+                        if (streams.size()>0) {
+                            ArrayAdapter sailAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
+                            spinner.setAdapter(sailAdapter);
+                        }
+                    }
 
-                @Override
-                public void onSuccess(List<StreamDescriptor> data) {
-                    streams = data;
-                    if (streams.size()>0) {
+                    @Override
+                    public void onComplete() {
+                        setFeaturesEnabled(true);
+                    }
+                });
+
+            } catch (MalformedURLException e) {
+                Toast.makeText(getActivity(), "OMG! The URL you specified is malformed",
+                        Toast.LENGTH_LONG).show();
+                setFeaturesEnabled(true);
+            }
+        }
+    }
+
+    private void postLogin(String username, String password) {
+        if (currentConnection != null) {
+            setFeaturesEnabled(false);
+            try {
+                currentConnection.setUrl(urlEdit.getText().toString());
+                currentConnection.saveAsPreference(((MainActivity) getActivity()).getSettings());
+                currentConnection.login(username, password, new TaskReport<String>() {
+                    @Override
+                    public void onFailure(String reason) {
+                        streams = new ArrayList<StreamDescriptor>();
                         ArrayAdapter sailAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
                         spinner.setAdapter(sailAdapter);
+                        Toast.makeText(getActivity(), "OMG! your username/password might be wrong",
+                                Toast.LENGTH_LONG).show();
+                        setFeaturesEnabled(true);
                     }
-                }
 
-                @Override
-                public void onComplete() {
-                    scanButton.setEnabled(true);
-                }
-            });
+                    @Override
+                    public void onSuccess(String data) {
+                        Log.i("SESSION", data);
+                        currentConnection.token = data;
+                        currentConnection.tokenType = "session";
+                        listStreams();
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+            } catch (MalformedURLException e) {
+                Toast.makeText(getActivity(), "OMG! The URL you specified is malformed",
+                        Toast.LENGTH_LONG).show();
+                setFeaturesEnabled(true);
+            }
         }
     }
 

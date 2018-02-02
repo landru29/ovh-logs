@@ -1,10 +1,15 @@
 <resources>
     <string name="app_name">graylog</string>
-    <string name="log_read_token_label">Read Token</string>
+    <string name="log_read_token_label">Read Token method</string>
+    <string name="log_login_label">Login method</string>
+    <string name="log_token_label">Token</string>
     <string name="scan">Scan</string>
+    <string name="login">Login</string>
     <string name="select">Select</string>
     <string name="log_stream_label">Stream</string>
     <string name="filter">filter</string>
     <string name="home">Home</string>
     <string name="graylog_url">URL graylog</string>
+    <string name="log_username_label">Username</string>
+    <string name="log_password_label">Password</string>
 </resources>

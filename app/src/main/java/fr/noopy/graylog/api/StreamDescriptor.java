@@ -11,13 +11,13 @@ import org.json.JSONObject;
 public class StreamDescriptor {
 
     public String id;
-    public String title;
+    public String description;
 
     public static final String PREFS_STREAM = "stream";
 
     public StreamDescriptor(JSONObject desc) throws JSONException {
         id = desc.getString("id");
-        title = desc.getString("description");
+        description = desc.getString("description");
 
     }
 
@@ -25,9 +25,20 @@ public class StreamDescriptor {
         this(new JSONObject(data));
     }
 
+    public String stringify() {
+        JSONObject result = new JSONObject();
+        try {
+            result.put("id", id);
+            result.put("description", description);
+            return result.toString();
+        } catch (JSONException e) {
+            return "";
+        }
+    }
+
 
     @Override
     public String toString() {
-        return title;
+        return description;
     }
 }
