@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import fr.noopy.graylog.api.Connection;
+import fr.noopy.graylog.filter.Filter;
 import fr.noopy.graylog.log.LogAdapter;
 import fr.noopy.graylog.log.Message;
 import fr.noopy.graylog.task.TaskReport;
@@ -33,6 +34,10 @@ public class LogFragment extends Fragment {
     private EditText filter;
     private Button launchFilter;
     private Connection currentConnection;
+    private Filter currentFilter;
+    private boolean loading = false;
+    int pastVisiblesItems, visibleItemCount, totalItemCount;
+    private LinearLayoutManager mLayoutManager;
 
 
 
@@ -47,8 +52,38 @@ public class LogFragment extends Fragment {
         launchFilter = rootView.findViewById(R.id.launchFilter);
 
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(currentContext));
+        mLayoutManager = new LinearLayoutManager(currentContext);
+        recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.setAdapter(new LogAdapter(messages));
+
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener()
+        {
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy)
+            {
+                if(dy > 0) //check for scroll down
+                {
+                    visibleItemCount = mLayoutManager.getChildCount();
+                    totalItemCount = mLayoutManager.getItemCount();
+                    pastVisiblesItems = mLayoutManager.findFirstVisibleItemPosition();
+
+                    if (!loading)
+                    {
+                        if ( (visibleItemCount + pastVisiblesItems) >= totalItemCount)
+                        {
+                            loading = true;
+                            Log.v("...", "Last Item Wow !");
+                            //Do pagination.. i.e. fetch new data
+                        }
+                    }
+                }
+            }
+        });
+
+        currentFilter = new Filter();
+        currentFilter.fields.add("timestamp");
+        currentFilter.fields.add("msg");
+        currentFilter.fields.add("title");
 
 
         Bundle bundle = this.getArguments();
@@ -86,15 +121,12 @@ public class LogFragment extends Fragment {
 
     }
 
-    private String getFilter() {
-        return filter.getText().toString();
-    }
-
     private void readLogs () {
+        currentFilter.query = filter.getText().toString();
         if (currentConnection!= null) {
             launchFilter.setEnabled(false);
             messages.clear();
-            currentConnection.readLogs(getFilter(), new TaskReport<List<Message>>() {
+            currentConnection.readLogs(currentFilter, new TaskReport<List<Message>>() {
                 @Override
                 public void onFailure(String reason) {
 

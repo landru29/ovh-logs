@@ -28,6 +28,7 @@ import java.util.Set;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.StringEntity;
+import fr.noopy.graylog.filter.Filter;
 import fr.noopy.graylog.log.Message;
 import fr.noopy.graylog.task.TaskReport;
 
@@ -281,7 +282,7 @@ public class Connection {
         });
     }
 
-    public void readLogs (String filter, final TaskReport<List<Message>> task) {
+    public void readLogs (Filter filter, final TaskReport<List<Message>> task) {
         if ( !this.isConsistent()) {
             Log.i("OMG", "Connection is unconsistent");
             task.onFailure("Connection is unconsistent");
@@ -295,12 +296,12 @@ public class Connection {
             return;
         }
         RequestParams request = new RequestParams();
-        request.put("fields", "title,msg,timestamp");
+        request.put("fields", filter.getFieldList());
         request.put("filter", "streams:" + this.currentStream.id);
-        request.put("query", filter);
-        request.put("limit", 150);
-        request.put("seconds", 300);
-        request.put("sort", "timestamp:desc");
+        request.put("query", filter.query);
+        request.put("limit", filter.limit);
+        request.put("seconds", filter.seconds);
+        request.put("sort", filter.sort);
         Log.i("request", request.toString());
 
         final String urlStr = relativeSearchUrl();
