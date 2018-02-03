@@ -12,4 +12,8 @@
     <string name="graylog_url">URL graylog</string>
     <string name="log_username_label">Username</string>
     <string name="log_password_label">Password</string>
+
+    <string name="malformed_url">OMG! The URL you specified is malformed</string>
+    <string name="server_error">OMG! something\'s got wront with graylog server</string>
+    <string name="bad_user_pass">OMG! your username/password might be wrong</string>
 </resources>

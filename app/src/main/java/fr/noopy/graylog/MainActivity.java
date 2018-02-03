@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.Window;
 
 import fr.noopy.graylog.api.Connection;
 import fr.noopy.graylog.api.StreamDescriptor;
@@ -28,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
         settings =  this.getSharedPreferences(PREFS_NAME, 0);
@@ -75,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     public void gotoLogs (Bundle bundle) {
 
         if (bundle.getString("connection", "").isEmpty() && currentConnexion != null) {
+            Log.i("ADD TO BUNDLE", currentConnexion.toString());
             bundle.putString("connection", currentConnexion.toString());
         }
 

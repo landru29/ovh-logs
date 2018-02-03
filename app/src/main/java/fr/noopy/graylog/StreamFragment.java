@@ -77,8 +77,8 @@ public class StreamFragment extends Fragment {
             currentConnection = new Connection();
         }
 
-        if (tokenEdit != null) {
-            tokenEdit.setText(currentConnection.token);
+        if (tokenEdit != null &&currentConnection.tokens.containsKey("token")) {
+            tokenEdit.setText(currentConnection.tokens.get("token"));
         }
         if (urlEdit != null) {
             urlEdit.setText(currentConnection.getUrl());
@@ -187,18 +187,23 @@ public class StreamFragment extends Fragment {
         });
 
         if (currentConnection != null) {
-            tokenEdit.setText(currentConnection.token);
             urlEdit.setText(currentConnection.getUrl());
+            usernameEdit.setText(currentConnection.username);
+            passwordEdit.setText(currentConnection.password);
 
-            if (currentConnection.isConsistent()) {
-                listStreams();
+            if (currentConnection.tokens.containsKey("token")) {
+                tokenEdit.setText(currentConnection.tokens.get("token"));
+
+                if (currentConnection.isConsistent()) {
+                    listStreams();
+                }
             }
         }
 
-        if (currentConnection.tokenType == "token") {
-            byToken.toggle();
-        } else {
+        if (currentConnection == null || currentConnection.tokenType != "token") {
             byLogin.toggle();
+        } else {
+            byToken.toggle();
         }
 
     }
@@ -213,7 +218,7 @@ public class StreamFragment extends Fragment {
                 this.currentConnection.listStreams(new TaskReport<List<StreamDescriptor>>() {
                     @Override
                     public void onFailure(String reason) {
-                        Toast.makeText(getActivity(), "OMG! something's got wront with graylog server",
+                        Toast.makeText(getActivity(), ((MainActivity) currentContext).getText(R.string.server_error),
                                 Toast.LENGTH_LONG).show();
                     }
 
@@ -233,7 +238,7 @@ public class StreamFragment extends Fragment {
                 });
 
             } catch (MalformedURLException e) {
-                Toast.makeText(getActivity(), "OMG! The URL you specified is malformed",
+                Toast.makeText(getActivity(), ((MainActivity) currentContext).getText(R.string.malformed_url),
                         Toast.LENGTH_LONG).show();
                 setFeaturesEnabled(true);
             }
@@ -252,7 +257,7 @@ public class StreamFragment extends Fragment {
                         streams = new ArrayList<StreamDescriptor>();
                         ArrayAdapter sailAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
                         spinner.setAdapter(sailAdapter);
-                        Toast.makeText(getActivity(), "OMG! your username/password might be wrong",
+                        Toast.makeText(getActivity(), ((MainActivity) currentContext).getText(R.string.bad_user_pass),
                                 Toast.LENGTH_LONG).show();
                         setFeaturesEnabled(true);
                     }
@@ -260,8 +265,7 @@ public class StreamFragment extends Fragment {
                     @Override
                     public void onSuccess(String data) {
                         Log.i("SESSION", data);
-                        currentConnection.token = data;
-                        currentConnection.tokenType = "session";
+                        currentConnection.setToken(data, "session");
                         listStreams();
                     }
 
@@ -271,7 +275,7 @@ public class StreamFragment extends Fragment {
                     }
                 });
             } catch (MalformedURLException e) {
-                Toast.makeText(getActivity(), "OMG! The URL you specified is malformed",
+                Toast.makeText(getActivity(), ((MainActivity) currentContext).getText(R.string.malformed_url),
                         Toast.LENGTH_LONG).show();
                 setFeaturesEnabled(true);
             }

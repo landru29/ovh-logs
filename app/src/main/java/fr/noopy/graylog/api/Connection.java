@@ -20,7 +20,11 @@ import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.entity.StringEntity;
@@ -33,17 +37,23 @@ import fr.noopy.graylog.task.TaskReport;
 
 public class Connection {
     public String name;
-    public String token;
+    public Map<String, String> tokens = new HashMap<String, String>();
     public URL url;
-    public String tokenType;
+    public String tokenType = "";
     public StreamDescriptor currentStream;
+    public String username = "";
+    public String password = "";
 
     public static final String PREFS_CONNECTION = "connection";
+    public static final String JSON_FIELD_TOKENS = "tokens";
+    public static final String JSON_FIELD_NAME = "name";
+    public static final String JSON_FIELD_URL = "url";
+    public static final String JSON_FIELD_USERNAME = "username";
+    public static final String JSON_FIELD_PASSWORD = "password";
+    public static final String JSON_FIELD_TOKEN_TYPE = "tokenType";
 
     public Connection() {
         this.name = "default";
-        this.token = "";
-        this.tokenType = "";
         try {
             this.url = new URL("");
         } catch (MalformedURLException e) {
@@ -51,18 +61,27 @@ public class Connection {
         }
     }
 
-    public Connection(String name, String token, String urlStr) throws MalformedURLException {
+    public Connection(String name, Map<String, String> tokens, String urlStr, String username, String password, String tokentype) throws MalformedURLException {
         this.name = name;
-        this.token = token;
+        this.tokens = tokens;
         this.url = new URL(urlStr);
+        this.username = username;
+        this.password = password;
+        this.tokenType = tokentype;
     }
 
     public Connection(JSONObject data) throws MalformedURLException, JSONException {
-        this(data.getString("name"), data.has("token") ? data.getString("token") : "", data.getString("url"));
-        if (data.has("tokenType")) {
-            tokenType = data.getString("tokenType");
-        } else if (!token.isEmpty() ) {
-            tokenType = "token";
+        this(
+                data.has(JSON_FIELD_NAME) ? data.getString(JSON_FIELD_NAME) : "default",
+                getTokens(data),
+                data.has(JSON_FIELD_URL) ? data.getString(JSON_FIELD_URL) : "",
+                data.has(JSON_FIELD_USERNAME) ? data.getString(JSON_FIELD_USERNAME) : "",
+                data.has(JSON_FIELD_PASSWORD) ? data.getString(JSON_FIELD_PASSWORD) : "",
+                data.has(JSON_FIELD_TOKEN_TYPE) ? data.getString(JSON_FIELD_TOKEN_TYPE) : ""
+        );
+        if (!tokens.isEmpty() && tokenType.isEmpty() ) {
+            Set<String> keys = tokens.keySet();
+            tokenType = keys.iterator().next();
         }
         if (data.has("stream")) {
             currentStream = new StreamDescriptor(data.getString("stream"));
@@ -71,20 +90,34 @@ public class Connection {
 
     public Connection(String data) throws MalformedURLException, JSONException {
         this(new JSONObject(data));
+        Log.i("CONNEXION BUILDER", data);
+    }
+
+    public static Map<String, String> getTokens(JSONObject data) throws JSONException {
+        Map<String, String> map = new HashMap<String, String>();
+        if (data.has(JSON_FIELD_TOKENS)) {
+            JSONObject object = data.getJSONObject(JSON_FIELD_TOKENS);
+            Iterator<String> keysItr = object.keys();
+            while (keysItr.hasNext()) {
+                String key = keysItr.next();
+                String value = object.get(key).toString();
+                map.put(key, value);
+            }
+        }
+        Log.i("TOKENS", map.toString());
+        return map;
     }
 
 
-    public String toString(boolean all) {
+    public String toString() {
         JSONObject result = new JSONObject();
         try {
-            result.put("name", name);
-            if (tokenType == "token" || all) {
-                result.put("token", token);
-            }
-            if (all) {
-                result.put("tokenType", tokenType);
-            }
-            result.put("url", url.toString());
+            result.put(JSON_FIELD_NAME, name);
+            result.put(JSON_FIELD_TOKENS, new JSONObject(tokens));
+            result.put(JSON_FIELD_TOKEN_TYPE, tokenType);
+            result.put(JSON_FIELD_URL, url.toString());
+            result.put(JSON_FIELD_USERNAME, username);
+            result.put(JSON_FIELD_PASSWORD, password);
             if (currentStream != null) {
                 result.put("stream", currentStream.stringify());
             }
@@ -94,13 +127,9 @@ public class Connection {
         }
     }
 
-    public String toString() {
-        return toString(false);
-    }
-
     public void saveAsPreference(SharedPreferences settings) {
         SharedPreferences.Editor editor = settings.edit();
-        String dataStr = toString(false);
+        String dataStr = toString();
         editor.putString(PREFS_CONNECTION, dataStr);
         editor.commit();
         Log.i("Preferences", "saving connection " + getUrl());
@@ -120,7 +149,7 @@ public class Connection {
 
     public Bundle saveAsBundle() {
         Bundle bundle = new Bundle();
-        bundle.putString("connection", toString(true));
+        bundle.putString("connection", toString());
         return bundle;
     }
 
@@ -169,9 +198,10 @@ public class Connection {
     public AsyncHttpClient client(boolean withAuth) {
         AsyncHttpClient client = new AsyncHttpClient(true,80,443);
         if (withAuth) {
-            client.setBasicAuth(token, tokenType);
-            Log.i("basic", token + ":" + tokenType);
+            client.setBasicAuth(tokens.get(tokenType), tokenType);
+            Log.i("basic", tokens.get(tokenType) + ":" + tokenType);
         }
+        client.addHeader("accept", "application/json");
         return client;
     }
 
@@ -180,11 +210,11 @@ public class Connection {
     }
 
     public boolean isConsistent() {
-        return (url != null) && !token.isEmpty();
+        return (url != null) && tokens.containsKey(tokenType);
     }
 
     public void setToken(String data, String dataType) {
-        token = data;
+        tokens.put(dataType, data);
         tokenType = dataType;
     }
 
@@ -319,7 +349,7 @@ public class Connection {
         });
     }
 
-    public void login(String username, String password, final TaskReport<String> task) {
+    public void login(final String log_username, final String log_password, final TaskReport<String> task) {
         if (url == null) {
             Log.i("OMG", "Connection is unconsistent");
             task.onFailure("Connection is unconsistent");
@@ -329,8 +359,8 @@ public class Connection {
         final String urlStr = this.loginUrl();
         try {
             JSONObject jsonParams = new JSONObject();
-            jsonParams.put("username", username);
-            jsonParams.put("password", password);
+            jsonParams.put(JSON_FIELD_USERNAME, log_username);
+            jsonParams.put(JSON_FIELD_PASSWORD, log_password);
             jsonParams.put("host", url.getHost());
             AsyncHttpClient client = this.client(false);
             //client.addHeader("Host", url.getHost());
@@ -346,6 +376,8 @@ public class Connection {
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                     if (response.has("session_id")) {
                         try {
+                            username = log_username;
+                            password = log_password;
                             task.onSuccess(response.getString("session_id"));
                         } catch (JSONException e) {
                             task.onFailure(e.toString());
@@ -385,8 +417,4 @@ public class Connection {
         }
     }
 
-    // Get session ID
-    // curl 'https://gra2.logs.ovh.com/api/system/sessions' -H 'Content-Type: application/json' -H 'Accept: application/json'  --data-binary '{"username":"my_username","password":"my_password","host":url.getHost()}'
-    // Response
-    // {"valid_until":"2018-02-01T15:27:26.162+0000","session_id":"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"}
 }
