@@ -1,37 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/linearLayout"
+<com.sothree.slidinguppanel.SlidingUpPanelLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:sothree="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/sliding_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:baselineAligned="false"
-    android:orientation="vertical"
-    android:weightSum="100">
-
+    android:gravity="bottom"
+    sothree:umanoPanelHeight="68dp"
+    sothree:umanoShadowHeight="4dp">
     <LinearLayout
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:id="@+id/linearLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:baselineAligned="false"
+        android:orientation="vertical"
+        android:weightSum="100">
 
-        <EditText
-            android:id="@+id/filter"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:ems="10"
-            android:inputType="textPersonName"
-            android:text="*" />
+            android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/launchFilter"
-            android:layout_width="wrap_content"
+            <Spinner
+                android:id="@+id/time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/filter" />
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:text="@string/default_query" />
+
+            <Button
+                android:id="@+id/launchFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/filter" />
+        </LinearLayout>
+
+        <android.support.v7.widget.RecyclerView
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
     </LinearLayout>
 
-    <android.support.v7.widget.RecyclerView
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/recyclerView"
+    <LinearLayout
+        android:id="@+id/panel"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
-</LinearLayout>
+        android:layout_height="match_parent"
+        android:baselineAligned="false"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center|top"
+            android:text="@string/more_filter"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+        <LinearLayout
+            android:id="@+id/fieldSelector"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:baselineAligned="false"
+            android:orientation="vertical">
+
+        </LinearLayout>
+    </LinearLayout>
+
+</com.sothree.slidinguppanel.SlidingUpPanelLayout>

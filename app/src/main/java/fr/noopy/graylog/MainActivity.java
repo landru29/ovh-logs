@@ -10,7 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
-import android.view.Window;
+import com.google.android.gms.ads.MobileAds;
 
 import fr.noopy.graylog.api.Connection;
 import fr.noopy.graylog.api.StreamDescriptor;
@@ -31,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
+        //MobileAds.initialize(this, "YOUR_ADMOB_APP_ID");
 
         settings =  this.getSharedPreferences(PREFS_NAME, 0);
 

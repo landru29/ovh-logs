@@ -3,6 +3,7 @@
     <!-- Base application theme. -->
     <style name="WindowTitleBackground">
         <item name="android:background">@color/titlebackgroundcolor</item>
+        <item name="android:windowActionBarOverlay">true</item>
     </style>
 
 </resources>

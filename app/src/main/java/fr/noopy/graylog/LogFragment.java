@@ -1,6 +1,7 @@
 package fr.noopy.graylog;
 
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
@@ -10,12 +11,21 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import fr.noopy.graylog.api.Connection;
+import fr.noopy.graylog.api.StreamDescriptor;
+import fr.noopy.graylog.api.TimeDescriptor;
 import fr.noopy.graylog.filter.Filter;
 import fr.noopy.graylog.log.LogAdapter;
 import fr.noopy.graylog.log.Message;
@@ -38,6 +48,10 @@ public class LogFragment extends Fragment {
     private boolean loading = false;
     int pastVisiblesItems, visibleItemCount, totalItemCount;
     private LinearLayoutManager mLayoutManager;
+    private Spinner spinner;
+    public List<TimeDescriptor> timeList = new ArrayList<>();
+    public List<String> availableFields = new ArrayList<>();
+    public LinearLayout fieldList;
 
 
 
@@ -117,7 +131,33 @@ public class LogFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        readLogs();
+
+        fieldList = ((Activity) currentContext).findViewById(R.id.fieldSelector);
+
+
+        spinner = ((Activity) currentContext).findViewById(R.id.time);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                TimeDescriptor current = timeList.get(position);
+                currentFilter.seconds = current.duration;
+                readLogs();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+
+            }
+        });
+        timeList.clear();
+        timeList.add(new TimeDescriptor(5 * 60, currentContext.getString(R.string.last_5_minutes)));
+        timeList.add(new TimeDescriptor(10 * 60, currentContext.getString(R.string.last_10_minutes)));
+        timeList.add(new TimeDescriptor(15 * 60, currentContext.getString(R.string.last_15_minutes)));
+        timeList.add(new TimeDescriptor(60 * 60, currentContext.getString(R.string.last_1_hour)));
+        ArrayAdapter streamAdapter = new ArrayAdapter<TimeDescriptor>(currentContext, R.layout.spinner, timeList);
+        spinner.setAdapter(streamAdapter);
+
+        readFields();
 
     }
 
@@ -141,6 +181,47 @@ public class LogFragment extends Fragment {
                 @Override
                 public void onComplete() {
                     launchFilter.setEnabled(true);
+                }
+            });
+        }
+    }
+
+    private void readFields() {
+        if (currentConnection != null) {
+            currentConnection.getFields(new TaskReport<List<String>> () {
+                @Override
+                public void onFailure(String reason) {
+
+                }
+
+                @Override
+                public void onSuccess(List<String> data) {
+                    availableFields = data;
+                    //fieldList.removeAllViews();
+                    for (int i=0; i<availableFields.size(); i++) {
+                        CheckBox field = new CheckBox(currentContext);
+                        field.setText(availableFields.get(i));
+                        fieldList.addView(field);
+                        if (currentFilter.fields.contains(availableFields.get(i))) {
+                            field.setChecked(true);
+                        }
+                        field.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                            @Override
+                            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                                String fieldName = compoundButton.getText().toString();
+                                if (isChecked) {
+                                    currentFilter.fields.add(fieldName);
+                                } else {
+                                    currentFilter.fields.remove(fieldName);
+                                }
+                            }
+                        });
+                    }
+                    Log.i("Fields", availableFields.toString());
+                }
+
+                @Override
+                public void onComplete() {
                 }
             });
         }

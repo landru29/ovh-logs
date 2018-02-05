@@ -31,10 +31,8 @@ public class LogViewHolder extends RecyclerView.ViewHolder{
     }
 
     public void bind(Message msg){
-        Date localTime = new Date(System.currentTimeMillis());
-        Date fromGmt = new Date(msg.timestamp.getTime() + TimeZone.getDefault().getOffset(localTime.getTime()));
         textViewView.setText(msg.get("msg"));
         titleView.setText("title:" + msg.get("title"));
-        timestampView.setText(df.format(fromGmt));
+        timestampView.setText(df.format(msg.timestamp));
     }
 }

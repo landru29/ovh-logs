@@ -226,8 +226,8 @@ public class StreamFragment extends Fragment {
                     public void onSuccess(List<StreamDescriptor> data) {
                         streams = data;
                         if (streams.size()>0) {
-                            ArrayAdapter sailAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
-                            spinner.setAdapter(sailAdapter);
+                            ArrayAdapter streamAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
+                            spinner.setAdapter(streamAdapter);
                         }
                     }
 
@@ -255,8 +255,8 @@ public class StreamFragment extends Fragment {
                     @Override
                     public void onFailure(String reason) {
                         streams = new ArrayList<StreamDescriptor>();
-                        ArrayAdapter sailAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
-                        spinner.setAdapter(sailAdapter);
+                        ArrayAdapter streamAdapter = new ArrayAdapter<StreamDescriptor>(currentContext, R.layout.spinner, streams);
+                        spinner.setAdapter(streamAdapter);
                         Toast.makeText(getActivity(), ((MainActivity) currentContext).getText(R.string.bad_user_pass),
                                 Toast.LENGTH_LONG).show();
                         setFeaturesEnabled(true);
