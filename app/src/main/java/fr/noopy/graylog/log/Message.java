@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 /**
  * Created by cyrille on 29/01/18.
@@ -27,6 +28,7 @@ public class Message {
         id = msg.getString("_id");
         String dateStr = msg.getString("timestamp");
         SimpleDateFormat formater=new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"); //2018-01-29T20:53:42.000Z
+        formater.setTimeZone(TimeZone.getTimeZone("UTC"));
         timestamp = formater.parse(dateStr);
 
         Iterator<String> keysItr = msg.keys();

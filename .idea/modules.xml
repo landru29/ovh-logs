@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/ovh-logs.iml" filepath="$PROJECT_DIR$/ovh-logs.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ovhlogs.iml" filepath="$PROJECT_DIR$/ovhlogs.iml" />
     </modules>
   </component>
 </project>
