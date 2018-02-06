@@ -95,9 +95,9 @@ public class LogFragment extends Fragment {
         });
 
         currentFilter = new Filter();
-        currentFilter.fields.add("timestamp");
+        /*currentFilter.fields.add("timestamp");
         currentFilter.fields.add("msg");
-        currentFilter.fields.add("title");
+        currentFilter.fields.add("title");*/
 
 
         Bundle bundle = this.getArguments();

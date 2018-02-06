@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -54,6 +55,23 @@ public class Message {
     }
 
     public List<String> keys() {
-        return new ArrayList<String>(map.keySet());
+        List<String> allFields = new ArrayList<String>(map.keySet());
+        List<String>fieldExclude= Arrays.asList("gl2_source_input", "gl2_source_node", "streams", "_id");
+        for (int i=0; i<fieldExclude.size(); i++) {
+            if (allFields.contains(fieldExclude.get(i))) {
+                allFields.remove(fieldExclude.get(i));
+            }
+        }
+        return allFields;
+    }
+
+    public List<String> keys(List<String> existingList) {
+        List<String> allFields = keys();
+        for (int i=0; i<existingList.size(); i++) {
+            if (!allFields.contains(existingList.get(i))) {
+                allFields.add(existingList.get(i));
+            }
+        }
+        return allFields;
     }
 }

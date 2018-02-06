@@ -79,7 +79,9 @@ public class Connection {
             "size_int_fixit","levelName","IsMachine","TransportType","loggerName","SessionId","remoteAddress_city_name","PortNumber","ovh_warn_mismatch_num_type","SessionID","Reason","Function",
             "MaxOutstandingCount","requestPath","LUN","IsSlowLink","PolicyApplicationMode","ThresholdInkbps","BucketIoCount5","remoteAddress_geolocation","BucketIoCount3","PolicyProcessingMode","BucketIoCount4",
             "BucketIoCount1","BucketIoCount2","MaxDeviceQueueCount","InfoDescription","ClassDeviceGuid", "Expires", "totalCount", "Created", "RequestStatus", "user-agent", "ResourceURI", "HasEndAuthUrl",
-            "TokenType", "elapsedTime", "HasAuthUrl", "AuthRequired", "HasFlowUrl", "removedCount");
+            "TokenType", "elapsedTime", "HasAuthUrl", "AuthRequired", "HasFlowUrl", "removedCount", "QueueTileCleanups", "NameLength", "QueueTileCloses", "PolicyElapsedTimeInSeconds", "IsDomainJoined", "SessionName",
+            "MonitorWidth", "WinlogonReturnTimeElapsedInMilliseconds", "ComponentName", "NewPhysicalMediumType", "DescriptionString", "KaValue", "KeyType", "ClientMode", "AlgorithmName", "KaMinLimit",
+            "HiveNameLength");
 
     public Connection() {
         this.name = "default";
@@ -330,13 +332,8 @@ public class Connection {
             task.onComplete();
             return;
         }
-        RequestParams request = new RequestParams();
-        request.put("fields", filter.getFieldList());
+        RequestParams request = filter.setRequest();
         request.put("filter", "streams:" + this.currentStream.id);
-        request.put("query", filter.query);
-        request.put("limit", filter.limit);
-        request.put("seconds", filter.seconds);
-        request.put("sort", filter.sort);
         Log.i("request", request.toString());
 
         final String urlStr = relativeSearchUrl();
