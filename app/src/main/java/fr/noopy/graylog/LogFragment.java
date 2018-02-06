@@ -21,10 +21,10 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import fr.noopy.graylog.api.Connection;
-import fr.noopy.graylog.api.StreamDescriptor;
 import fr.noopy.graylog.api.TimeDescriptor;
 import fr.noopy.graylog.filter.Filter;
 import fr.noopy.graylog.log.LogAdapter;
@@ -52,6 +52,7 @@ public class LogFragment extends Fragment {
     public List<TimeDescriptor> timeList = new ArrayList<>();
     public List<String> availableFields = new ArrayList<>();
     public LinearLayout fieldList;
+    public List<String> displayFields = new ArrayList<>();
 
 
 
@@ -95,10 +96,6 @@ public class LogFragment extends Fragment {
         });
 
         currentFilter = new Filter();
-        /*currentFilter.fields.add("timestamp");
-        currentFilter.fields.add("msg");
-        currentFilter.fields.add("title");*/
-
 
         Bundle bundle = this.getArguments();
         readDataFromBundle(bundle);
@@ -157,7 +154,7 @@ public class LogFragment extends Fragment {
         ArrayAdapter streamAdapter = new ArrayAdapter<TimeDescriptor>(currentContext, R.layout.spinner, timeList);
         spinner.setAdapter(streamAdapter);
 
-        readFields();
+        //readFields();
 
     }
 
@@ -175,7 +172,12 @@ public class LogFragment extends Fragment {
                 @Override
                 public void onSuccess(List<Message> data) {
                     messages = data;
+                    for(int i = 0; i<messages.size(); i++) {
+                        messages.get(i).fields = displayFields;
+                    }
                     recyclerView.setAdapter(new LogAdapter(messages));
+                    availableFields = getFieldsFromLogs();
+                    displayFieldCheckboxes();
                 }
 
                 @Override
@@ -197,31 +199,51 @@ public class LogFragment extends Fragment {
                 @Override
                 public void onSuccess(List<String> data) {
                     availableFields = data;
-                    //fieldList.removeAllViews();
-                    for (int i=0; i<availableFields.size(); i++) {
-                        CheckBox field = new CheckBox(currentContext);
-                        field.setText(availableFields.get(i));
-                        fieldList.addView(field);
-                        if (currentFilter.fields.contains(availableFields.get(i))) {
-                            field.setChecked(true);
-                        }
-                        field.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                            @Override
-                            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
-                                String fieldName = compoundButton.getText().toString();
-                                if (isChecked) {
-                                    currentFilter.fields.add(fieldName);
-                                } else {
-                                    currentFilter.fields.remove(fieldName);
-                                }
-                            }
-                        });
-                    }
+                    displayFieldCheckboxes();
                     Log.i("Fields", availableFields.toString());
                 }
 
                 @Override
                 public void onComplete() {
+                }
+            });
+        }
+    }
+
+    private List<String> getFieldsFromLogs () {
+        List<String> fields = new ArrayList<>();
+        for (int i=0; i<messages.size(); i++) {
+            fields = messages.get(i).keys(fields);
+        }
+        Collections.sort(fields);
+        if (fields.contains("message") && displayFields.isEmpty()) {
+            displayFields.add("message");
+        }
+        return fields;
+    }
+
+    private void displayFieldCheckboxes() {
+        fieldList.removeAllViews();
+        for (int i=0; i<availableFields.size(); i++) {
+            CheckBox field = new CheckBox(currentContext);
+            field.setText(availableFields.get(i));
+            fieldList.addView(field);
+            if (displayFields.contains(availableFields.get(i))) {
+                field.setChecked(true);
+            }
+            field.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                    String fieldName = compoundButton.getText().toString();
+                    if (isChecked) {
+                        displayFields.add(fieldName);
+                    } else {
+                        displayFields.remove(fieldName);
+                    }
+                    for(int i = 0; i<messages.size(); i++) {
+                        messages.get(i).fields = displayFields;
+                    }
+                    recyclerView.setAdapter(new LogAdapter(messages));
                 }
             });
         }

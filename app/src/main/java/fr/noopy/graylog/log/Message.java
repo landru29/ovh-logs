@@ -23,6 +23,7 @@ public class Message {
     public String id;
     public Date timestamp;
     public Map<String, String> map = new HashMap<String, String>();
+    public List<String> fields = new ArrayList<>();
 
     public Message(JSONObject data) throws JSONException, ParseException {
         JSONObject msg = data.getJSONObject("message");
@@ -56,7 +57,7 @@ public class Message {
 
     public List<String> keys() {
         List<String> allFields = new ArrayList<String>(map.keySet());
-        List<String>fieldExclude= Arrays.asList("gl2_source_input", "gl2_source_node", "streams", "_id");
+        List<String>fieldExclude= Arrays.asList("gl2_source_input", "gl2_source_node", "streams", "_id", "timestamp");
         for (int i=0; i<fieldExclude.size(); i++) {
             if (allFields.contains(fieldExclude.get(i))) {
                 allFields.remove(fieldExclude.get(i));

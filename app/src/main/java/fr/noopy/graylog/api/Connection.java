@@ -332,7 +332,7 @@ public class Connection {
             task.onComplete();
             return;
         }
-        RequestParams request = filter.setRequest();
+        RequestParams request = filter.getRequest();
         request.put("filter", "streams:" + this.currentStream.id);
         Log.i("request", request.toString());
 

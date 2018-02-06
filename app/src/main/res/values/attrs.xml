@@ -1,0 +1,6 @@
+<resources>
+    <declare-styleable name="DisplayFeature">
+        <attr name="label" format="string" />
+        <attr name="value" format="string" />
+    </declare-styleable>
+</resources>
