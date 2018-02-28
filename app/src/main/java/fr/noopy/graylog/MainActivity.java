@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        //MobileAds.initialize(this, "YOUR_ADMOB_APP_ID");
+        MobileAds.initialize(this, getString(R.string.ADMOB_APP_ID));
 
         settings =  this.getSharedPreferences(PREFS_NAME, 0);
 

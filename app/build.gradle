@@ -15,6 +15,13 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
+        buildTypes.each {
+            def jsonFile = file('./admob.json')
+            def parsedJson = new groovy.json.JsonSlurper().parseText(jsonFile.text)
+
+            it.resValue 'string', 'ADMOB_APP_ID', parsedJson.id
+        }
     }
 }
 
@@ -36,3 +43,6 @@ dependencies {
     }
     compile 'com.sothree.slidinguppanel:library:3.4.0'
 }
+
+
+
